@@ -4,7 +4,6 @@
 
 #include <limits>
 #include <numeric>
-#include <stdexcept>
 
 #include "algorithms.hpp"
 
@@ -33,32 +32,57 @@ long long stoerWagnerMinCut(const Graph& g, std::vector<int>& side,
     long long best = std::numeric_limits<long long>::max();
     std::vector<int> bestGroup;
 
-    // Step 2: one phase.
     // w[v] is v's total weight to the vertices already in A.
     std::vector<long long> w(n, 0);
     std::vector<bool> inA(n, false);
-    for (int v : active) {
-        w[v] = 0;
-        inA[v] = false;
-    }
-    int prev = -1, last = -1;
-    for (std::size_t step = 0; step < active.size(); ++step) {
-        // Pick the active vertex outside A that is most tightly connected to A.
-        int next = -1;
-        for (int v : active)
-            if (!inA[v] && (next == -1 || w[v] > w[next])) next = v;
 
-        inA[next] = true;
-        prev = last;
-        last = next;
-        for (int u : active)
-            if (!inA[u]) w[u] += mat[next][u];
-    }
-    // last is in A now, so the update loop above never touched w[last]:
-    // it is still last's connection to everything added before it.
-    const long long cutOfPhase = w[last];
+    // Step 5: one phase per merge, n-1 phases in all. Each phase needs at
+    // least two active vertices so that prev exists.
+    while (active.size() > 1) {
+        // Step 2: one phase.
+        for (int v : active) {
+            w[v] = 0;
+            inA[v] = false;
+        }
+        int prev = -1, last = -1;
+        for (std::size_t step = 0; step < active.size(); ++step) {
+            // Pick the active vertex outside A that is most tightly connected
+            // to A.
+            int next = -1;
+            for (int v : active)
+                if (!inA[v] && (next == -1 || w[v] > w[next])) next = v;
 
-    // TODO Steps 3-5: record best cut, merge, repeat and fill side.
-    (void)best, (void)bestGroup, (void)side, (void)prev, (void)cutOfPhase;
-    throw std::logic_error("stoerWagnerMinCut: not implemented yet");
+            inA[next] = true;
+            prev = last;
+            last = next;
+            for (int u : active)
+                if (!inA[u]) w[u] += mat[next][u];
+        }
+        // last is in A now, so the update loop above never touched w[last]:
+        // it is still last's connection to everything added before it.
+        const long long cutOfPhase = w[last];
+
+        // Step 3: record the best cut. The cut of the phase separates last's
+        // group from everything else.
+        if (cutOfPhase < best) {
+            best = cutOfPhase;
+            bestGroup = groups[last];
+        }
+
+        // Step 4: merge last into prev.
+        groups[prev].insert(groups[prev].end(), groups[last].begin(),
+                            groups[last].end());
+        // Rows and columns both, so mat stays symmetric. mat[prev][prev] picks
+        // up the merged edge's weight, but it is never read: the phase update
+        // only adds mat[v][u] for u outside A, and v is already in A, so
+        // u != v.
+        for (int u = 0; u < n; ++u) mat[prev][u] += mat[last][u];
+        for (int u = 0; u < n; ++u) mat[u][prev] += mat[u][last];
+        std::erase(active, last);
+    }
+
+    // Step 5 (cont.): bestGroup is one side of the best cut.
+    side.assign(g.n, 0);
+    for (int v : bestGroup) side[v] = 1;
+    return best;
 }
