@@ -1,12 +1,13 @@
 # Predictions: Brian
 
-Written before running any benchmark. Commit this file before experiments
+Written on 2026-10-28 and 2026-10-29 before running any benchmark. Commit this file before experiments
 start and do not edit it afterwards; later thoughts go in the report.
 
 ## Which algorithm wins on which input family, and why
-I think the Karger-Stein algorithm will be the fastest out of the 3 on a large and dense unweighted graphs. I think it will be the fastest here because Stoer-Wagner is deterministic and will struggle on large graphs in comparison to the Karger-Stein and Karger algorithms which are randomised and do not consider every vertices like the deterministic way. Between Karger-Stein and Karger, I am not fully sure but I am guessing Karger-Stein would win because it doesn't use random contradiction, I think this is what separates the 2 algorithms interms of efficiency.
+**Large Dense Graphs:** I think the Karger-Stein algorithm will be the fastest followed by Karger and Stoer-Wagner. This is because Stoer-Wagner is a deterministic algorithm and I think it will struggle on this input family in comparisons to the other 2 randomised algorithms. I think Karger-Stein will be faster than Karger because it uses recursive branching rather than random contradictions and many repeats.
+**Smaller Spares Graphs** I think the the speed between Karger-Stein and Stoer-Wagner will be very similar but in this case, Stoer-Wagner is deterministic and will have a higher success rate so I think overall the winner will be Stoer-Wagner followed by Karger-Stein and Karger in dead last. Because the graph is smaller and less dense, the deterministic approach shouldn't make that much of a difference interms of speed.
 ## Where the crossovers fall (graph size, density)
-I think there will be a crossover when the graph size and density reaches a certain point or threshold. At this point I think the graph size and density will be very large, somewhere around a couple thousand vertices.
+I think there will be a crossover when the graph size and density reaches a certain point. At this point I think the graph size and density will be very large, somewhere around a thousand vertices and the Karger-Stein algorithm will run away as the faster/winning algorithm, but before that point, I think the race will be neck and neck.
 ## Success rates of the randomised algorithms compared with their bounds
 I think the Karger-Stein will beat the Karger algorithm interms of success rate because it does not use random contradiction, it uses recursive branching which I think will be more consistent.
 ## Anything else I expect to see
