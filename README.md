@@ -50,7 +50,27 @@ implementation. Modules that are not written yet show as `SKIP`.
 make bench
 ```
 
-builds the benchmark harness with `-O2` into `build/bench`.
+builds the benchmark harness with `-O2` into `build/bench`. Run it with, for
+example:
+
+```bash
+./build/bench --sizes 25,50,100 --instances 3 --runs 100 --reps 10 --out results/trial.csv
+```
+
+For each family, size and instance it generates one graph, takes
+Stoer-Wagner's answer as the true minimum cut, times Stoer-Wagner `--reps`
+times and each randomised algorithm for `--runs` single runs, and writes one
+CSV row per run:
+
+```text
+family,n,m,instance,algorithm,run,seed,time_ms,found,truth,success
+```
+
+It also prints a summary per instance: median run time, success rate p, runs
+needed for 99% confidence ⌈ln 0.01 / ln(1 − p)⌉, and time to 99%. Use
+`--families`, `--algorithms` and `--budget` (seconds per algorithm per
+instance; past it, that algorithm skips the rest of the family) to narrow a
+run. `./build/bench --help` lists every option.
 
 Compiler flags used for every reported measurement: `-std=c++20 -O2 -DNDEBUG`
 (see `BENCH_FLAGS` in the [Makefile](Makefile)). If they change, update this
@@ -104,8 +124,12 @@ report/         report drafts
 
 ## Still to agree
 
-- [ ] Whether each algorithm's internal graph conversion counts towards its
-      measured time
-- [ ] Timing method: clock, warm-up runs, repetitions, reported statistic
-- [ ] CSV format for `results/`
+- [x] Whether each algorithm's internal graph conversion counts towards its
+      measured time: **yes**, it is part of the algorithm's cost. Graph
+      generation is not timed.
+- [x] Timing method: `std::chrono::steady_clock` around the call only, one
+      untimed warm-up per batch, report the median
+- [x] CSV format for `results/`: see "Building and running"
 - [ ] Sizes and parameters for each input family
+- [ ] `kargerSingleRun` (Brian) and the real families (Ethan) registered in
+      `bench/bench.cpp`, replacing the `smoke` placeholder
