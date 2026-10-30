@@ -6,6 +6,8 @@
 #define MINCUT_BRUTE_FORCE_HPP
 
 #include "graph.hpp"
+#include <cstdint>
+#include <vector>
 
 // Same contract as MinCutFn, so it can serve as ground truth in the tests.
 // Only practical for small graphs (around n <= 16).
