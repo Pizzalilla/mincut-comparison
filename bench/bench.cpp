@@ -10,12 +10,13 @@
 // Every run becomes one CSV row, so the analysis scripts can compute any
 // statistic afterwards. A per-instance summary is printed to stdout: median
 // run time, success rate p, runs needed for 99% confidence
-// k = ceil(ln 0.01 / ln(1 - p)), and time to 99% = k x median run time.
+// k = ceil(ln 0.01 / ln(1 - p)), and time to 99% = k x mean run time.
 //
 // Timing: std::chrono::steady_clock around the algorithm call only. Graph
 // generation is outside the timed region. Each algorithm's conversion of the
 // edge list into its own structure is inside it, because that is part of the
-// algorithm's cost. One untimed warm-up run precedes each measured batch.
+// algorithm's cost. The process warms the CPU up for about 0.5 s before any
+// measurement, and one untimed warm-up run precedes each measured batch.
 //
 // Usage: build/bench [--out PATH] [--sizes 25,50,100] [--families a,b]
 //                    [--algorithms a,b] [--instances N] [--runs N]
@@ -73,7 +74,7 @@ struct Family {
 };
 
 // TODO(Ethan): register the real families from generators.hpp here and
-// remove "smoke".
+// remove the "smoke" entry. Keep smokeGraph itself: globalWarmUp uses it.
 const std::vector<Family> kFamilies = {
     {"smoke", smokeGraph},
 };
@@ -201,6 +202,23 @@ double median(std::vector<double> v) {
     return v.size() % 2 ? v[mid] : (v[mid - 1] + v[mid]) / 2;
 }
 
+double mean(const std::vector<double>& v) {
+    double total = 0;
+    for (double x : v) total += x;
+    return total / (double)v.size();
+}
+
+// The first batch in a process measured 10-40% slower than the same graph
+// straight afterwards (CPU ramping up), which a per-batch warm-up does not
+// cover. Keep the CPU busy for about half a second before measuring anything.
+void globalWarmUp() {
+    const Graph g = smokeGraph(60, 1);
+    std::vector<int> side;
+    auto start = std::chrono::steady_clock::now();
+    while (std::chrono::steady_clock::now() - start < std::chrono::milliseconds(500))
+        stoerWagnerMinCut(g, side, 0);
+}
+
 // Runs needed to find the minimum with probability 0.99, given per-run
 // success rate p. Returns -1 when p == 0 (never succeeded: unbounded).
 long long runsFor99(double p) {
@@ -227,6 +245,7 @@ int main(int argc, char** argv) {
     std::printf("compiler: %s\ncommand:", __VERSION__);
     for (int i = 0; i < argc; ++i) std::printf(" %s", argv[i]);
     std::printf("\nwriting:  %s\n\n", opt.out.c_str());
+    globalWarmUp();
     std::printf("%-14s %5s %7s %4s  %-13s %5s %11s %7s %10s %13s\n", "family", "n",
                 "m", "inst", "algorithm", "runs", "median_ms", "p", "runs_99",
                 "time_99_ms");
@@ -254,6 +273,17 @@ int main(int argc, char** argv) {
                     double spentMs = 0;
                     for (int r = 0; r < count; ++r) {
                         const RunResult res = timeRun(alg.singleRun, g, (std::uint64_t)r);
+                        // A valid cut lighter than Stoer-Wagner's means the
+                        // ground truth itself is wrong: stop rather than
+                        // record it as a failed run.
+                        if (res.found < truth) {
+                            std::fprintf(stderr,
+                                         "bench: %s found %lld < Stoer-Wagner's %lld "
+                                         "(%s, n=%d, instance %d)\n",
+                                         alg.name.c_str(), res.found, truth,
+                                         family.name.c_str(), n, inst);
+                            return 1;
+                        }
                         const bool success = res.found == truth;
                         hits += success;
                         times.push_back(res.ms);
@@ -278,7 +308,9 @@ int main(int argc, char** argv) {
                         std::snprintf(t99, sizeof t99, "-");
                     } else {
                         std::snprintf(k99, sizeof k99, "%lld", k);
-                        std::snprintf(t99, sizeof t99, "%.3f", (double)k * med);
+                        // Expected total time of k runs is k x the mean run
+                        // time, not the median.
+                        std::snprintf(t99, sizeof t99, "%.3f", (double)k * mean(times));
                     }
                     std::printf("%-14s %5d %7zu %4d  %-13s %5zu %11.4f %7.3f %10s %13s%s\n",
                                 family.name.c_str(), n, g.edges.size(), inst,
