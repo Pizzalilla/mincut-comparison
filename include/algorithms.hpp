@@ -17,6 +17,8 @@ long long stoerWagnerMinCut(const Graph& g, std::vector<int>& side,
 long long kargerMinCut(const Graph& g, std::vector<int>& side,
                        std::uint64_t seed);
 
+long long kargerSingleRun(const Graph& g, std::vector<int>& side, std::uint64_t seed);
+
 // Primary author: Ethan — karger_stein/karger_stein.cpp
 long long kargerSteinMinCut(const Graph& g, std::vector<int>& side,
                             std::uint64_t seed);
