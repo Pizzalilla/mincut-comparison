@@ -2,6 +2,7 @@
 //
 // Primary author: Brian
 
+#include <cmath>
 #include <cstdint>
 #include <limits>
 #include <random>
@@ -13,7 +14,6 @@
 long long kargerMinCut(const Graph& g, std::vector<int>& side,
                        std::uint64_t seed) {
     (void)g, (void)side, (void)seed;
-    // throw std::logic_error("kargerMinCut: not implemented yet");
     if (g.n < 2) {
         throw std::invalid_argument("Graph must have at least 2 vertices");
     }
@@ -23,105 +23,94 @@ long long kargerMinCut(const Graph& g, std::vector<int>& side,
             e.v < 0 || e.v >= g.n) {
             throw std::invalid_argument("Invalid edge endpoint");
         }
+
         if (e.w < 0) {
-            throw std::invalid_argument("Edge weights must be non-negative");
+            throw std::invalid_argument(
+                "Edge weights must be non-negative");
         }
     }
-    constexpr int TRIALS = 1000;
     std::mt19937_64 rng(seed);
-    long long bestCut = std::numeric_limits<long long>::max();
-    std::vector<int> bestSide;
-    // Repeat the random contraction algorithm.
-    for (int trial = 0; trial < TRIALS; ++trial) {
-        // Each vertex initially represents its own component.
-        std::vector<int> component(g.n);
-        for (int v = 0; v < g.n; ++v) {
-            component[v] = v;
-        }
-        int remaining = g.n;
-        // Contract edges until two components remain.
-        while (remaining > 2) {
-            long double totalWeight = 0.0L;
-            // Count the weights of edges between different components.
-            for (const Edge& e : g.edges) {
-                if (component[e.u] != component[e.v]) {
-                    totalWeight += static_cast<long double>(e.w);
-                }
-            }
-            // No positive-weight edge remains between components.
-            if (totalWeight == 0.0L) {
-                break;
-            }
+    std::uniform_real_distribution<long double> dist(0.0L, 1.0L);
 
-            // Select a crossing edge with probability proportional
-            // to its weight.
-            std::uniform_real_distribution<long double> dist(0.0L, totalWeight);
-            long double target = dist(rng);
-            long double cumulative = 0.0L;
-            int u = -1;
-            int v = -1;
-            int lastU = -1;
-            int lastV = -1;
-            for (const Edge& e : g.edges) {
-                if (component[e.u] == component[e.v] || e.w == 0) {
-                    continue;
-                }
-
-                lastU = e.u;
-                lastV = e.v;
-                cumulative += static_cast<long double>(e.w);
-
-                if (target < cumulative) {
-                    u = e.u;
-                    v = e.v;
-                    break;
-                }
-            }
-            // Fallback for floating-point rounding.
-            if (u == -1) {
-                u = lastU;
-                v = lastV;
-            }
-
-            if (u == -1) {
-                break;
-            }
-
-            // Merge v's component into u's component.
-            int oldComponent = component[v];
-            int newComponent = component[u];
-            for (int x = 0; x < g.n; ++x) {
-                if (component[x] == oldComponent) {
-                    component[x] = newComponent;
-                }
-            }
-            --remaining;
-        }
-        // Convert the remaining components into a cut.
-        std::vector<int> currentSide(g.n);
-        for (int v = 0; v < g.n; ++v) {
-            currentSide[v] =
-                (component[v] == component[0]) ? 0 : 1;
-        }
-        // Calculate the cut weight using the original edges.
-        long long cutWeight = 0;
-        for (const Edge& e : g.edges) {
-            if (currentSide[e.u] != currentSide[e.v]) {
-                cutWeight += e.w;
-            }
-        }
-        // Save the best cut found across all trials.
-        if (cutWeight < bestCut) {
-            bestCut = cutWeight;
-            bestSide = std::move(currentSide);
+    // Assign each positive-weight edge a random key.
+    std::vector<std::pair<long double, std::size_t>> edgeOrder;
+    for (std::size_t i = 0; i < g.edges.size(); ++i) {
+        const Edge& e = g.edges[i];
+        if (e.w == 0 || e.u == e.v) {
+            continue;
         }
 
-        // Zero is optimal for non-negative edge weights.
-        if (bestCut == 0) {
+        long double u;
+        do {
+            u = dist(rng);
+        } while (u == 0.0L);
+        long double key = -std::log(u) / e.w;
+        edgeOrder.push_back({key, i});
+    }
+
+    // Process edges in increasing random-key order.
+    std::sort(edgeOrder.begin(), edgeOrder.end());
+
+    // Initialise Union-Find.
+    std::vector<int> parent(g.n);
+    std::vector<int> size(g.n, 1);
+    for (int v = 0; v < g.n; ++v) {
+        parent[v] = v;
+    }
+
+    // Find the root of a component with path compression.
+    auto find = [&parent](int x) {
+        int root = x;
+        while (parent[root] != root) {
+            root = parent[root];
+        }
+        while (parent[x] != x) {
+            int next = parent[x];
+            parent[x] = root;
+            x = next;
+        }
+        return root;
+    };
+    int components = g.n;
+
+    // Contract edges until two components remain.
+    for (const auto& entry : edgeOrder) {
+        if (components == 2) {
             break;
         }
+
+        const Edge& e = g.edges[entry.second];
+        int rootU = find(e.u);
+        int rootV = find(e.v);
+
+        // Already in the same component (self-loop after contraction).
+        if (rootU == rootV) {
+            continue;
+        }
+
+        // Union by size.
+        if (size[rootU] < size[rootV]) {
+            std::swap(rootU, rootV);
+        }
+
+        parent[rootV] = rootU;
+        size[rootU] += size[rootV];
+        --components;
     }
 
-    side = std::move(bestSide);
-    return bestCut;
+    // Construct the final two-sided partition.
+    side.assign(g.n, 0);
+    int firstRoot = find(0);
+    for (int v = 0; v < g.n; ++v) {
+        side[v] = (find(v) == firstRoot) ? 0 : 1;
+    }
+
+    // Calculate the cut weight using the original graph.
+    long long cutWeight = 0;
+    for (const Edge& e : g.edges) {
+        if (side[e.u] != side[e.v]) {
+            cutWeight += e.w;
+        }
+    }
+    return cutWeight;
 }
