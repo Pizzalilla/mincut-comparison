@@ -2,6 +2,7 @@
 //
 // Primary author: Brian
 
+#include <algorithm>
 #include <cmath>
 #include <cstdint>
 #include <limits>
