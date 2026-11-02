@@ -10,7 +10,7 @@
 
 #include "union_find.hpp"
 
-Graph generateRandomGraph(int n, double p, long long max_weight, std::uint64_t seed) 
+Graph generateRandomGraph(int n, double p, long long maxWeight, std::uint64_t seed) 
 {
     Graph g;
     g.n = n;
@@ -21,7 +21,7 @@ Graph generateRandomGraph(int n, double p, long long max_weight, std::uint64_t s
 
     std::mt19937_64 rng(seed);
     std::uniform_real_distribution<double> dist_p(0.0, 1.0);
-    std::uniform_int_distribution<long long> dist_w(1, max_weight);
+    std::uniform_int_distribution<long long> dist_w(1, maxWeight);
 
     UnionFind uf(n);
     int components = n;
@@ -32,6 +32,7 @@ Graph generateRandomGraph(int n, double p, long long max_weight, std::uint64_t s
         {
             if (dist_p(rng) <= p) 
             {
+
                 g.edges.push_back({u, v, dist_w(rng)});
                 if (uf.unite(u, v)) 
                 {
@@ -52,6 +53,7 @@ Graph generateRandomGraph(int n, double p, long long max_weight, std::uint64_t s
             if (uf.unite(nodes[i-1], nodes[i])) 
             {
                 g.edges.push_back({nodes[i-1], nodes[i], dist_w(rng)});
+
             }
         }
     }
@@ -59,7 +61,8 @@ Graph generateRandomGraph(int n, double p, long long max_weight, std::uint64_t s
     return g;
 }
 
-Graph generateBarbellGraph(int n, long long max_weight, std::uint64_t seed) 
+
+Graph generateBarbellGraph(int n, long long maxWeight, std::uint64_t seed) 
 {
     Graph g;
     g.n = n;
@@ -69,11 +72,11 @@ Graph generateBarbellGraph(int n, long long max_weight, std::uint64_t seed)
     }
 
     std::mt19937_64 rng(seed);
-    std::uniform_int_distribution<long long> dist_w(1, max_weight);
+    std::uniform_int_distribution<long long> dist_w(1, maxWeight);
 
     int half = n / 2;
 
-    // left 
+    // left clique
     for (int u = 0; u < half; ++u) 
     {
         for (int v = u + 1; v < half; ++v) 
@@ -82,7 +85,7 @@ Graph generateBarbellGraph(int n, long long max_weight, std::uint64_t seed)
         }
     }
 
-    // right
+    // right clique
     for (int u = half; u < n; ++u) 
     {
         for (int v = u + 1; v < n; ++v) 
@@ -100,6 +103,7 @@ Graph generateCycleGraph(int n, long long weight)
 {
     Graph g;
     g.n = n;
+    
     if (n < 2)
     {
         return g;
@@ -114,7 +118,7 @@ Graph generateCycleGraph(int n, long long weight)
 }
 
 
-Graph generateManyCutsGraph(int n, int k, long long max_weight, long long bridge_weight, std::uint64_t seed) 
+Graph generateManyCutsGraph(int n, int k, long long maxWeight, long long bridgeWeight, std::uint64_t seed) 
 {
     Graph g;
     g.n = n;
@@ -124,21 +128,22 @@ Graph generateManyCutsGraph(int n, int k, long long max_weight, long long bridge
     } 
 
     std::mt19937_64 rng(seed);
-    std::uniform_int_distribution<long long> dist_w(1, max_weight);
+    std::uniform_int_distribution<long long> dist_w(1, maxWeight);
 
-    int cluster_size = n / k;
+    int clusterSize = n / k;
 
 
     for (int c = 0; c < k; ++c) 
     {
-        int start = c * cluster_size;
-        int end = start + cluster_size;
+        int start = c * clusterSize;
+        int end = start + clusterSize;
 
         for (int u = start; u < end; ++u) 
         {
             for (int v = u + 1; v < end; ++v) 
             {
                 g.edges.push_back({u, v, dist_w(rng)});
+
             }
         }
     }
@@ -146,12 +151,12 @@ Graph generateManyCutsGraph(int n, int k, long long max_weight, long long bridge
 
     for (int c = 0; c < k; ++c) 
     {
-        int u = c * cluster_size; 
-        int v_cluster = (c + 1) % k;
+        int u = c * clusterSize; 
+        int vCluster = (c + 1) % k;
 
-        int v = v_cluster * cluster_size + (cluster_size - 1);
+        int v = vCluster * clusterSize + (clusterSize - 1);
         
-        g.edges.push_back({u, v, bridge_weight});
+        g.edges.push_back({u, v, bridgeWeight});
     }
 
     return g;
