@@ -131,5 +131,4 @@ report/         report drafts
       untimed warm-up per batch, report the median
 - [x] CSV format for `results/`: see "Building and running"
 - [ ] Sizes and parameters for each input family
-- [ ] `kargerSingleRun` (Brian) and the real families (Ethan) registered in
-      `bench/bench.cpp`, replacing the `smoke` placeholder
+- [x] Karger and the real families registered in `bench/bench.cpp`
