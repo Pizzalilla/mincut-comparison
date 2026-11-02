@@ -73,7 +73,7 @@ std::vector<Case> cases() {
     };
 }
 
-// print graph
+// print graph REMOVE ON SUBMISSION
 // void printGraph(const std::string& name, const Graph& g) {
 //     std::cout << "--- " << name << " (V=" << g.n << ", E=" << g.edges.size() << ") ---\n";
 //     for (const auto& e : g.edges) {
@@ -162,7 +162,7 @@ int main() {
         }
     }
 
-    // graph tests
+    // for testing graphs
     // printGraph("Cycle", generateCycleGraph(6, 1));
     // printGraph("Barbell", generateBarbellGraph(6, 10, 42));
 

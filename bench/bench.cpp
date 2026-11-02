@@ -73,7 +73,7 @@ struct Family {
     Graph (*make)(int n, std::uint64_t seed);
 };
 
-// TODO(Ethan): register the real families from generators.hpp here and
+// register the real families from generators.hpp here and
 // remove the "smoke" entry. Keep smokeGraph itself: globalWarmUp uses it.
 const std::vector<Family> kFamilies = {
     // Dense random graph (p=0.5, max weight 100)
@@ -99,8 +99,9 @@ const std::vector<Family> kFamilies = {
     // Many cuts graph (4 clusters, max weight 100, bridge weight 1)
     {"many_cuts", [](int n, std::uint64_t seed) {
         int k = 4;
-        // Fallback for when benchmark size 'n' isn't perfectly divisible by k
-        if (n < k || n % k != 0) return generateCycleGraph(n, 1);
+        if (n < k || n % k != 0) { 
+            return generateCycleGraph(n, 1); 
+        }
         return generateManyCutsGraph(n, k, 100, 1, seed);
     }}
 };
