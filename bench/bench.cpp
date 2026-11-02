@@ -76,9 +76,34 @@ struct Family {
 // TODO(Ethan): register the real families from generators.hpp here and
 // remove the "smoke" entry. Keep smokeGraph itself: globalWarmUp uses it.
 const std::vector<Family> kFamilies = {
-    {"smoke", smokeGraph},
+    // Dense random graph (p=0.5, max weight 100)
+    {"random_dense", [](int n, std::uint64_t seed) { 
+        return generateRandomGraph(n, 0.5, 100, seed); 
+    }},
+    
+    // Sparse random graph (p=0.1, max weight 100)
+    {"random_sparse", [](int n, std::uint64_t seed) { 
+        return generateRandomGraph(n, 0.1, 100, seed); 
+    }},
+    
+    // Barbell trap graph (max weight 100)
+    {"barbell", [](int n, std::uint64_t seed) { 
+        return generateBarbellGraph(n, 100, seed); 
+    }},
+    
+    // Cycle graph (weight 1, seed ignored)
+    {"cycle", [](int n, std::uint64_t /*seed*/) { 
+        return generateCycleGraph(n, 1); 
+    }},
+    
+    // Many cuts graph (4 clusters, max weight 100, bridge weight 1)
+    {"many_cuts", [](int n, std::uint64_t seed) {
+        int k = 4;
+        // Fallback for when benchmark size 'n' isn't perfectly divisible by k
+        if (n < k || n % k != 0) return generateCycleGraph(n, 1);
+        return generateManyCutsGraph(n, k, 100, 1, seed);
+    }}
 };
-
 struct Options {
     std::string out = "results/bench.csv";
     std::vector<int> sizes = {25, 50, 100};
