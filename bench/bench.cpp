@@ -47,17 +47,17 @@ struct Algorithm {
     bool randomised;
 };
 
-// TODO(Brian): replace nullptr with kargerSingleRun once it lands.
-// kargerMinCut repeats 1000 trials internally, so it cannot measure one run.
-// kargerSteinMinCut is already a single run (one recursion tree).
+// kargerMinCut is a single contraction run since Brian's rewrite (sorted
+// random keys + union-find). kargerSteinMinCut is a single run (one recursion
+// tree). The harness does all the repeating.
 const std::vector<Algorithm> kAlgorithms = {
     {"stoer-wagner", stoerWagnerMinCut, false},
-    {"karger", nullptr, true},
+    {"karger", kargerMinCut, true},
     {"karger-stein", kargerSteinMinCut, true},
 };
 
-// Placeholder for testing the harness only. It is not one of the report's
-// input families: G(n, 1/2) with unit weights, plus a path for connectivity.
+// Used only by globalWarmUp, to keep the CPU busy before measuring. It is not
+// one of the report's input families.
 Graph smokeGraph(int n, std::uint64_t seed) {
     std::mt19937_64 rng(seed);
     Graph g{n, {}};
@@ -73,8 +73,7 @@ struct Family {
     Graph (*make)(int n, std::uint64_t seed);
 };
 
-// register the real families from generators.hpp here and
-// remove the "smoke" entry. Keep smokeGraph itself: globalWarmUp uses it.
+// The input families from generators.hpp.
 const std::vector<Family> kFamilies = {
     // Dense random graph (p=0.5, max weight 100)
     {"random_dense", [](int n, std::uint64_t seed) { 
@@ -272,7 +271,7 @@ int main(int argc, char** argv) {
     for (int i = 0; i < argc; ++i) std::printf(" %s", argv[i]);
     std::printf("\nwriting:  %s\n\n", opt.out.c_str());
     globalWarmUp();
-    std::printf("%-14s %5s %7s %4s  %-13s %5s %11s %7s %10s %13s\n", "family", "n",
+    std::printf("%-16s %5s %7s %4s  %-13s %5s %11s %7s %10s %13s\n", "family", "n",
                 "m", "inst", "algorithm", "runs", "median_ms", "p", "runs_99",
                 "time_99_ms");
 
@@ -338,7 +337,7 @@ int main(int argc, char** argv) {
                         // time, not the median.
                         std::snprintf(t99, sizeof t99, "%.3f", (double)k * mean(times));
                     }
-                    std::printf("%-14s %5d %7zu %4d  %-13s %5zu %11.4f %7.3f %10s %13s%s\n",
+                    std::printf("%-16s %5d %7zu %4d  %-13s %5zu %11.4f %7.3f %10s %13s%s\n",
                                 family.name.c_str(), n, g.edges.size(), inst,
                                 alg.name.c_str(), times.size(), med, p, k99, t99,
                                 overBudget.count(alg.name) ? "  (over budget: rest of family skipped)" : "");
