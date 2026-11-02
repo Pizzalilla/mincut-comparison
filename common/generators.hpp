@@ -11,5 +11,12 @@
 #define MINCUT_GENERATORS_HPP
 
 #include "graph.hpp"
+#include <cstdint>
+
+
+Graph generateRandomGraph(int n, double p, long long max_weight, std::uint64_t seed);
+Graph generateBarbellGraph(int n, long long max_weight, std::uint64_t seed); 
+Graph generateCycleGraph(int n, long long weight);
+Graph generateManyCutsGraph(int n, int k, long long max_weight, long long bridge_weight, std::uint64_t seed);
 
 #endif  // MINCUT_GENERATORS_HPP

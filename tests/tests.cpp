@@ -14,9 +14,11 @@
 #include <string>
 #include <utility>
 #include <vector>
+#include <iostream>
 
 #include "algorithms.hpp"
 #include "brute_force.hpp"
+#include "generators.hpp"
 
 namespace {
 
@@ -61,8 +63,24 @@ std::vector<Case> cases() {
                        {1, 5, 2}, {2, 3, 4}, {2, 6, 2}, {3, 6, 2},
                        {3, 7, 2}, {4, 5, 3}, {5, 6, 1}, {6, 7, 3}}),
          4},
+         {"cycle", 
+         generateCycleGraph(6, 1), 
+         2},
+         
+        {"barbell", 
+         generateBarbellGraph(6, 10, 42), // 42 is the random seed fn
+         1},
     };
 }
+
+// print graph
+// void printGraph(const std::string& name, const Graph& g) {
+//     std::cout << "--- " << name << " (V=" << g.n << ", E=" << g.edges.size() << ") ---\n";
+//     for (const auto& e : g.edges) {
+//         std::cout << e.u << " -- " << e.v << " [weight: " << e.w << "]\n";
+//     }
+//     std::cout << "\n";
+// }
 
 // Empty string if side is a valid cut of weight `claimed`, else the reason.
 std::string checkCut(const Graph& g, const std::vector<int>& side,
@@ -143,6 +161,10 @@ int main() {
             }
         }
     }
+
+    // graph tests
+    // printGraph("Cycle", generateCycleGraph(6, 1));
+    // printGraph("Barbell", generateBarbellGraph(6, 10, 42));
 
     std::printf("\n%s (%d failure%s)\n", failures ? "FAILED" : "OK", failures,
                 failures == 1 ? "" : "s");
