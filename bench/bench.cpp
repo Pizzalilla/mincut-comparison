@@ -95,13 +95,14 @@ const std::vector<Family> kFamilies = {
         return generateCycleGraph(n, 1); 
     }},
     
-    // Many cuts graph (4 clusters, max weight 100, bridge weight 1)
+    // Many cuts graph: a ring of unit-weight cliques of about 7 vertices,
+    // bridges of weight 3 and one weak bridge of 2. The minimum cut is 5 (the
+    // weak bridge plus any other), and every pair of strong bridges gives a
+    // near-minimum cut of 6, as does every vertex of a 7-vertex clique that no
+    // bridge touches. Intended for n >= 21.
     {"many_cuts", [](int n, std::uint64_t seed) {
-        int k = 4;
-        if (n < k || n % k != 0) { 
-            return generateCycleGraph(n, 1); 
-        }
-        return generateManyCutsGraph(n, k, 100, 1, seed);
+        int k = std::min(n, std::max(3, n / 7));
+        return generateManyCutsGraph(n, k, 1, 3, 2, seed);
     }}
 };
 struct Options {
