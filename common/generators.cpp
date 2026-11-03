@@ -118,45 +118,47 @@ Graph generateCycleGraph(int n, long long weight)
 }
 
 
-Graph generateManyCutsGraph(int n, int k, long long maxWeight, long long bridgeWeight, std::uint64_t seed) 
+// Changed by Claude (AI) at Kartikay's request on 2026-11-03: any n now works
+// (the first n % k clusters get one extra vertex), and the bridge from the
+// last cluster back to the first is the weak one, with weight weakBridgeWeight.
+Graph generateManyCutsGraph(int n, int k, long long maxWeight, long long bridgeWeight, long long weakBridgeWeight, std::uint64_t seed)
 {
     Graph g;
     g.n = n;
-    if (n < 2 || k < 2 || n % k != 0)
+    if (k < 2 || n < k)
     {
         return g;
-    } 
+    }
 
     std::mt19937_64 rng(seed);
     std::uniform_int_distribution<long long> dist_w(1, maxWeight);
 
-    int clusterSize = n / k;
-
-
-    for (int c = 0; c < k; ++c) 
+    // cluster c holds vertices start[c] .. start[c + 1] - 1
+    std::vector<int> start(k + 1, 0);
+    for (int c = 0; c < k; ++c)
     {
-        int start = c * clusterSize;
-        int end = start + clusterSize;
+        start[c + 1] = start[c] + n / k + (c < n % k ? 1 : 0);
+    }
 
-        for (int u = start; u < end; ++u) 
+    for (int c = 0; c < k; ++c)
+    {
+        for (int u = start[c]; u < start[c + 1]; ++u)
         {
-            for (int v = u + 1; v < end; ++v) 
+            for (int v = u + 1; v < start[c + 1]; ++v)
             {
                 g.edges.push_back({u, v, dist_w(rng)});
-
             }
         }
     }
 
-
-    for (int c = 0; c < k; ++c) 
+    // first vertex of cluster c to last vertex of cluster c + 1
+    for (int c = 0; c < k; ++c)
     {
-        int u = c * clusterSize; 
+        int u = start[c];
         int vCluster = (c + 1) % k;
+        int v = start[vCluster + 1] - 1;
 
-        int v = vCluster * clusterSize + (clusterSize - 1);
-        
-        g.edges.push_back({u, v, bridgeWeight});
+        g.edges.push_back({u, v, c == k - 1 ? weakBridgeWeight : bridgeWeight});
     }
 
     return g;
