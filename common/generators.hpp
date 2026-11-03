@@ -20,7 +20,9 @@
 Graph generateRandomGraph(int n, double p, long long max_weight, std::uint64_t seed);
 Graph generateBarbellGraph(int n, long long max_weight, std::uint64_t seed); 
 Graph generateCycleGraph(int n, long long weight);
-Graph generateManyCutsGraph(int n, int k, long long max_weight, long long bridge_weight, std::uint64_t seed);
+// k cliques in a ring, joined by bridges of bridge_weight, except one weak
+// bridge of weak_bridge_weight. Any n >= k works.
+Graph generateManyCutsGraph(int n, int k, long long max_weight, long long bridge_weight, long long weak_bridge_weight, std::uint64_t seed);
 
 // G(n, 1/2) with unit weights, plus a random spanning tree for connectivity.
 // The minimum cut is usually the lowest-degree vertex.
